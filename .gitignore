@@ -1,0 +1,12 @@
+# Environment
+env/
+.env
+
+# Python misc
+__pycache__/
+*.pyc
+*.egg-info
+
+# Misc
+*.backup
+*~

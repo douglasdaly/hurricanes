@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+pandas = "*"
+ipykernel = "*"
+jupyter = "*"
+"beautifulsoup4" = "*"
+click = "*"
+
+[dev-packages]
+spyder = "*"
+
+[requires]
+python_version = "3.6"
+
+[scripts]
+install_ipykernel = "python -m ipykernel install --name hurricanes-env --display-name \"Hurricane Data Env\""
+spyder = "spyder3 --new-instance -w src/"
