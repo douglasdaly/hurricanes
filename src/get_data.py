@@ -148,6 +148,7 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
     """Main script function"""
     # - Regions
     if pull_region:
+        print('Pulling region data...')
         region_data = dict()
         for region, region_code in regions.items():
             t_data = get_region_page_data(region_code)
@@ -159,9 +160,11 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
     else:
         with open('data/raw/region_data.pkl', 'rb') as fin:
             region_data = pickle.load(fin)
+        print('Region data loaded')
 
     # - Years
     if pull_years:
+        print('Pulling yearly data...')
         region_year_data = dict()
         for region, region_meta in region_data.items():
             region_year_data[region] = dict()
@@ -179,30 +182,35 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
     else:
         with open('data/raw/region_year_data.pkl', 'rb') as fin:
             region_year_data = pickle.load(fin)
+        print('Year data loaded')
 
     # - Storms
     if pull_storms:
         if os.path.isfile('data/raw/storm_data.pkl'):
             with open('data/raw/storm_data.pkl', 'rb') as fin:
                 storm_data = pickle.load(fin)
+            print('Storm data loaded')
         else:
             storm_data = dict()
 
-        for region, reg_yr_data in region_year_data.items():
-            storm_data[region] = dict()
-            for yr, yr_data in reg_yr_data.items():
-                storm_data[region][yr] = dict()
-                for storm_id in yr_data.keys():
-                    try:
+        print('Pulling storm data...')
+        try:
+            for region, reg_yr_data in region_year_data.items():
+                storm_data[region] = dict()
+                for yr, yr_data in reg_yr_data.items():
+                    storm_data[region][yr] = dict()
+                    for storm_id in yr_data.keys():
+                        if storm_id in storm_data[region][yr].keys():
+                            continue
                         t_data = get_storm_page_data(regions[region], yr,
                                                      storm_id)
                         storm_data[region][yr][storm_id] = t_data
-                    except Exception as ex:
-                        print("Unable to get all storm data: ")
-                        print(ex)
-                        break
 
-        with open('data/raw/storm_data.pkl', 'wb') as fout:
+        except Exception as ex:
+            print("Unable to get all storm data: ")
+            print(ex)
+
+        with open('.data/raw/storm_data.pkl', 'wb') as fout:
             pickle.dump(storm_data, fout)
         print('Storm data saved')
 
