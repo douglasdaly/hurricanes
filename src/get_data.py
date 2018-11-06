@@ -210,7 +210,7 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
             print("Unable to get all storm data: ")
             print(ex)
 
-        with open('.data/raw/storm_data.pkl', 'wb') as fout:
+        with open('data/raw/storm_data.pkl', 'wb') as fout:
             pickle.dump(storm_data, fout)
         print('Storm data saved')
 
