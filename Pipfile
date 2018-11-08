@@ -10,6 +10,8 @@ ipykernel = "*"
 jupyter = "*"
 "beautifulsoup4" = "*"
 click = "*"
+matplotlib = "*"
+papermill = "*"
 
 [dev-packages]
 spyder = "*"
@@ -18,5 +20,7 @@ spyder = "*"
 python_version = "3.6"
 
 [scripts]
-install_ipykernel = "python -m ipykernel install --name hurricanes-env --display-name \"Hurricane Data Env\""
+install_ipykernel = "python -m ipykernel install --user --name hurricanes-env --display-name \"Hurricane Data Env\""
+remove_ipykernel = "jupyter kernelspec remove hurricanes-env"
 spyder = "spyder3 --new-instance -w src/"
+nteract = "nteract --kernel hurricanes-env --cwd ."
