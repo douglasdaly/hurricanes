@@ -1,6 +1,7 @@
 #
 #	Configuration
 #
+
 PYTHON=python
 REQUIREMENTS_ENGINE=pipenv
 
@@ -20,10 +21,15 @@ endif
 #
 #	Recipes
 #
-.phony: requirements data
+
+.phony: requirements get_data process_data
 
 requirements:
 	$(INSTALL_REQS_CMD)
 
-data:
-	$(PYTHON) /src/get_data.py
+get_data:
+	$(PYTHON) src/get_data.py wunderground
+	$(PYTHON) src/get_data.py nasa
+
+process_data:
+	$(PYTHON) src/process_data wunderground

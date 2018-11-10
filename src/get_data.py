@@ -23,34 +23,47 @@ from bs4 import BeautifulSoup
 #
 #   Variables
 #
+
+# - Weather Underground
 region_list_url = "https://www.wunderground.com/hurricane/hurrarchive.asp?region={}"
 ind_data_url = "https://www.wunderground.com/hurricane/{}{}.asp"
 ind_storm_url = "https://www.wunderground.com/hurricane/{}{}{}.asp"
 
-regions = {
+region_dict = {
         "North Atlantic": 'at',
         "East Pacific": 'ep',
         "Western Pacific": 'wp',
         "Indian Ocean": 'is'
 }
 
+# - NASA Temperature Data
+nasa_temp_anomaly = 'http://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt'
+nasa_sea_level = 'ftp://podaac.jpl.nasa.gov/allData/merged_alt/L2/TP_J1_OSTM/global_mean_sea_level/GMSL_TPJAOS_4.2_199209_201807.txt'
+nasa_co2_data = 'ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt'
 
 #
 #   Functions
 #
 
-def get_soup(url, retries=3):
-    """Gets BS object from the given URL"""
-    # - Get Data
+def get_data(url, retries=3):
+    """Downloads object from the given URL"""
     if retries <= 0:
         raise Exception('Maximum retry count exceeded')
 
     try:
         with urllib.request.urlopen(url) as response:
-            html = response.read()
+            data = response.read()
     except urllib.request.HTTPError:
         time.sleep(3)
-        return get_soup(url, retries-1)
+        return get_file(url, retries-1)
+
+    return data
+
+
+def get_soup(url):
+    """Gets BS object from the given URL"""
+    # - Get Data
+    html = get_data(url)
 
     # - Get Soup
     soup = BeautifulSoup(html, 'html.parser')
@@ -67,7 +80,7 @@ def get_region_page_data(region_code):
     soup = get_soup(url)
     data_tbl = soup.find(id='yearList')
 
-    col_idxs = ['Storms', 'Hurricanes', 'Deaths', 'Damage']
+    col_idxs = ['Year', 'Storms', 'Hurricanes', 'Deaths', 'Damage']
     ret = dict()
     for row in data_tbl.find_all('tr'):
         cols = row.find_all('td')
@@ -134,23 +147,31 @@ def get_storm_page_data(region_code, year, storm_id):
 
 
 #
-#   Main Script Code
+#   Main Script Functions
 #
 
-@click.command()
-@click.option('--region', 'pull_region', flag_value=True, default=True)
-@click.option('--no-region', 'pull_region', flag_value=False)
-@click.option('--years', 'pull_years', flag_value=True, default=True)
-@click.option('--no-year', 'pull_years', flag_value=False)
-@click.option('--storms', 'pull_storms', flag_value=True)
-@click.option('--no-storms', 'pull_storms', flag_value=False, default=True)
-def main(pull_region=True, pull_years=True, pull_storms=False):
-    """Main script function"""
+@click.group()
+@click.pass_context
+def cli(ctx):
+    """Functions to get various pieces of weather-related data"""
+    ctx.ensure_object(dict)
+
+
+@cli.command()
+@click.pass_context
+@click.option('--regions/--no-regions', default=True,
+              help='Whether or not to pull top-level region data')
+@click.option('--years/--no-years', default=True,
+              help='Whether or not to pull year-level storm data')
+@click.option('--storms/--no-storms', default=True,
+              help='Whether or not to pull individual storm data')
+def wunderground(ctx, regions, years, storms):
+    """Weather Underground data pull function"""
     # - Regions
-    if pull_region:
+    if regions:
         print('Pulling region data...')
         region_data = dict()
-        for region, region_code in regions.items():
+        for region, region_code in region_dict.items():
             t_data = get_region_page_data(region_code)
             region_data[region] = t_data
 
@@ -163,7 +184,7 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
         print('Region data loaded')
 
     # - Years
-    if pull_years:
+    if years:
         print('Pulling yearly data...')
         region_year_data = dict()
         for region, region_meta in region_data.items():
@@ -185,7 +206,7 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
         print('Year data loaded')
 
     # - Storms
-    if pull_storms:
+    if storms:
         if os.path.isfile('data/raw/storm_data.pkl'):
             with open('data/raw/storm_data.pkl', 'rb') as fin:
                 storm_data = pickle.load(fin)
@@ -213,8 +234,32 @@ def main(pull_region=True, pull_years=True, pull_storms=False):
         with open('data/raw/storm_data.pkl', 'wb') as fout:
             pickle.dump(storm_data, fout)
         print('Storm data saved')
+    else:
+        print('Skipping storms data')
 
+
+@cli.command()
+def nasa():
+    """Gets global temperature data from NASA"""
+    links = {
+        'Temperature anomaly': (nasa_temp_anomaly, 'nasa_temperature_anomaly.txt'),
+        'Global sea-level': (nasa_sea_level, 'nasa_sea_level.txt'),
+        'Carbon Dioxide level': (nasa_co2_data, 'nasa_carbon_dioxide_levels.txt')
+    }
+
+    for name, (link, output) in links.items():
+        print('Downloading NASA {} data... '.format(name), end='', flush=True)
+        temp_txt = get_data(link)
+
+        with open('data/raw/{}'.format(output), 'wb') as fout:
+            fout.write(temp_txt)
+        print('DONE')
+
+
+#
+#   Entry-point
+#
 
 if __name__ == "__main__":
     """Script entry-point"""
-    main()
+    cli(obj={})
