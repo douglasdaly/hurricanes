@@ -33,7 +33,7 @@ region_dict = {
         "North Atlantic": 'at',
         "East Pacific": 'ep',
         "Western Pacific": 'wp',
-        "Indian Ocean": 'is'
+        "Indian Ocean": 'si'
 }
 
 # - NASA Temperature Data
@@ -169,7 +169,7 @@ def wunderground(ctx, regions, years, storms):
     """Weather Underground data pull function"""
     # - Regions
     if regions:
-        print('Pulling region data...')
+        print('Pulling region data... ', end='', flush=True)
         region_data = dict()
         for region, region_code in region_dict.items():
             t_data = get_region_page_data(region_code)
@@ -177,7 +177,8 @@ def wunderground(ctx, regions, years, storms):
 
         with open('data/raw/region_data.pkl', 'wb') as fout:
             pickle.dump(region_data, fout)
-        print('Region data saved')
+        print('DONE')
+
     else:
         with open('data/raw/region_data.pkl', 'rb') as fin:
             region_data = pickle.load(fin)
@@ -185,7 +186,7 @@ def wunderground(ctx, regions, years, storms):
 
     # - Years
     if years:
-        print('Pulling yearly data...')
+        print('Pulling yearly data... ', end='', flush=True)
         region_year_data = dict()
         for region, region_meta in region_data.items():
             region_year_data[region] = dict()
@@ -194,12 +195,13 @@ def wunderground(ctx, regions, years, storms):
                 if n_strms is None or n_strms.strip() == '' or int(n_strms) == 0:
                     continue
 
-                y_data = get_year_page_data(regions[region], year)
+                y_data = get_year_page_data(region_dict[region], year)
                 region_year_data[region][year] = y_data
 
         with open('data/raw/region_year_data.pkl', 'wb') as fout:
             pickle.dump(region_year_data, fout)
-        print('Year data saved')
+        print('DONE')
+
     else:
         with open('data/raw/region_year_data.pkl', 'rb') as fin:
             region_year_data = pickle.load(fin)
@@ -208,13 +210,14 @@ def wunderground(ctx, regions, years, storms):
     # - Storms
     if storms:
         if os.path.isfile('data/raw/storm_data.pkl'):
+            print('Loading saved storm data... ', end='', flush=True)
             with open('data/raw/storm_data.pkl', 'rb') as fin:
                 storm_data = pickle.load(fin)
-            print('Storm data loaded')
+            print('DONE')
         else:
             storm_data = dict()
 
-        print('Pulling storm data...')
+        print('Pulling storm data... ', end='', flush=True)
         try:
             for region, reg_yr_data in region_year_data.items():
                 storm_data[region] = dict()
@@ -223,17 +226,21 @@ def wunderground(ctx, regions, years, storms):
                     for storm_id in yr_data.keys():
                         if storm_id in storm_data[region][yr].keys():
                             continue
-                        t_data = get_storm_page_data(regions[region], yr,
+                        t_data = get_storm_page_data(region_dict[region], yr,
                                                      storm_id)
                         storm_data[region][yr][storm_id] = t_data
+            print('DONE')
 
         except Exception as ex:
-            print("Unable to get all storm data: ")
+            print('ERROR')
+            print("  Unable to get all storm data: ")
+            print("\t", end='')
             print(ex)
 
+        print('Saving storm data... ', end='', flush=True)
         with open('data/raw/storm_data.pkl', 'wb') as fout:
             pickle.dump(storm_data, fout)
-        print('Storm data saved')
+        print('DONE')
     else:
         print('Skipping storms data')
 
