@@ -55,7 +55,7 @@ def get_data(url, retries=3):
             data = response.read()
     except urllib.request.HTTPError:
         time.sleep(3)
-        return get_file(url, retries-1)
+        return get_data(url, retries-1)
 
     return data
 
@@ -186,17 +186,33 @@ def wunderground(ctx, regions, years, storms):
 
     # - Years
     if years:
-        print('Pulling yearly data... ', end='', flush=True)
-        region_year_data = dict()
-        for region, region_meta in region_data.items():
-            region_year_data[region] = dict()
-            for year, yr_meta in region_meta.items():
-                n_strms = yr_meta['Hurricanes']
-                if n_strms is None or n_strms.strip() == '' or int(n_strms) == 0:
-                    continue
+        if os.path.isfile('data/raw/region_year_data.pkl'):
+            print('Loading saved region year data... ', end='', flush=True)
+            with open('data/raw/region_year_data.pkl', 'rb') as fin:
+                region_year_data = pickle.load(fin)
+            print('DONE')
+        else:
+            region_year_data = dict()
 
-                y_data = get_year_page_data(region_dict[region], year)
-                region_year_data[region][year] = y_data
+        print('Pulling yearly data... ', end='', flush=True)
+        try:
+            for region, region_meta in region_data.items():
+                region_year_data[region] = dict()
+                for year, yr_meta in region_meta.items():
+                    if year in region_year_data[region].keys():
+                        continue
+
+                    n_strms = yr_meta['Storms']
+                    if n_strms is None or n_strms.strip() == '' or int(n_strms) == 0:
+                        continue
+
+                    y_data = get_year_page_data(region_dict[region], year)
+                    region_year_data[region][year] = y_data
+        except Exception as ex:
+            print('ERROR')
+            print("  Unable to get all yearly data: ")
+            print("\t", end='')
+            print(ex)
 
         with open('data/raw/region_year_data.pkl', 'wb') as fout:
             pickle.dump(region_year_data, fout)
