@@ -24,16 +24,16 @@ import click
 #   Variables
 #
 raw_data_dir = "data/raw"
+proc_data_dir = "data/processed"
 
 
 #
 #   Functions
 #
 
-def get_raw_data(raw_dir):
-    """Loads the raw data"""
-    fnames = dict([(x.split('.')[0], os.path.join(raw_data_dir, x))
-               for x in os.listdir(raw_data_dir) if x.endswith('.pkl')])
+def get_raw_wunderground_data(raw_dir):
+    """Loads the raw Weather Underground data"""
+    fnames = __get_file_names_helper(raw_dir, 'pkl')
 
     raw_data = dict()
     for k, v in fnames.items():
@@ -41,6 +41,13 @@ def get_raw_data(raw_dir):
             raw_data[k] = pickle.load(fin)
 
     return raw_data
+
+
+def __get_file_names_helper(directory, ext):
+    """Loads raw NASA txt file data"""
+    fnames = dict([(x.split('.')[0], os.path.join(directory, x))
+                   for x in os.listdir(directory) if x.endswith(ext)])
+    return fnames
 
 
 # - Region Data Processing Functions
@@ -254,6 +261,72 @@ def process_storm_track_data(raw_data):
     return track_data
 
 
+# - NASA Processing Functions
+
+def __process_nasa_data(name, file):
+    """Helper function to process NASA data"""
+    if name == 'nasa_carbon_dioxide_levels':
+        ret = __process_nasa_co2_data(file)
+    elif name == 'nasa_sea_level':
+        ret = __process_nasa_sea_level_data(file)
+    elif name == 'nasa_temperature_anomaly':
+        ret = __process_nasa_temp_data(file)
+    else:
+        ret = None
+
+    return ret
+
+
+def __process_nasa_co2_data(file):
+    """Processes NASA CO2 Data"""
+    with open(file, 'r') as fin:
+        all_lines = fin.readlines()
+
+    header_lines = np.array([1 for x in all_lines if x.startswith('#')]).sum()
+
+    co2_data = pd.read_csv(file, skiprows=header_lines, header=None,
+                           delim_whitespace=True)
+    co2_data[co2_data == -99.99] = np.nan
+
+    co2_data.columns = ['Year', 'Month', 'Year Fraction', 'Average', 'Interpolated',
+                        'Trend', 'N Days']
+
+    co2_data.set_index(['Year', 'Month'], inplace=True)
+    new_idx = [datetime(x[0], x[1], 1) for x in co2_data.index]
+    co2_data.index = new_idx
+    co2_data.index.name = 'Date'
+
+    return co2_data
+
+
+def __process_nasa_sea_level_data(file):
+    """Processes NASA Sea Level Change data"""
+    with open(file, 'r') as fin:
+        all_lines = fin.readlines()
+
+    header_lines = np.array([1 for x in all_lines if x.startswith('HDR')]).sum()
+    sea_level_data = pd.read_csv(file, delim_whitespace=True,
+                                 skiprows=header_lines-1).reset_index()
+
+    sea_level_data.columns = ['Altimeter Type', 'File Cycle', 'Year Fraction',
+                              'N Observations', 'N Weighted Observations', 'GMSL',
+                              'Std GMSL', 'GMSL (smoothed)', 'GMSL (GIA Applied)',
+                              'Std GMSL (GIA Applied)', 'GMSL (GIA, smoothed)',
+                              'GMSL (GIA, smoothed, filtered)']
+    sea_level_data.set_index('Year Fraction', inplace=True)
+
+    return sea_level_data
+
+
+def __process_nasa_temp_data(file):
+    """Processes NASA Temperature Anomaly data"""
+    temp_data = pd.read_csv(file, sep='\t', header=None)
+    temp_data.columns = ['Year', 'Annual Mean', 'Lowness Smoothing']
+    temp_data.set_index('Year', inplace=True)
+
+    return temp_data
+
+
 #
 #   Script Functions
 #
@@ -275,13 +348,13 @@ def cli(ctx):
               help='Whether or not to process individual storm track data')
 def wunderground(ctx, regions, years, storms):
     """Command to process the raw Weather Underground data"""
-    raw_data = get_raw_data(raw_data_dir)
+    raw_data = get_raw_wunderground_data(raw_data_dir)
 
     if regions:
         print('Processing region data... ', end='', flush=True)
         region_df = process_region_data(raw_data)
 
-        with open('data/processed/region_data.pkl', 'wb') as fout:
+        with open(os.path.join(proc_data_dir, 'region_data.pkl'), 'wb') as fout:
             pickle.dump(region_df, fout)
         print('DONE')
 
@@ -289,7 +362,7 @@ def wunderground(ctx, regions, years, storms):
         print('Processing region-yearly data... ', end='', flush=True)
         region_year_df = process_region_yearly_data(raw_data)
 
-        with open('data/processed/region_yearly_data.pkl', 'wb') as fout:
+        with open(os.path.join(proc_data_dir, 'region_yearly_data.pkl'), 'wb') as fout:
             pickle.dump(region_year_df, fout)
         print('DONE')
 
@@ -297,9 +370,29 @@ def wunderground(ctx, regions, years, storms):
         print('Processing storm track data... ', end='', flush=True)
         storm_track_dict = process_storm_track_data(raw_data)
 
-        with open('data/processed/storm_track_data.pkl', 'wb') as fout:
+        with open(os.path.join(proc_data_dir, 'storm_track_data.pkl'), 'wb') as fout:
             pickle.dump(storm_track_dict, fout)
         print('DONE')
+
+
+@cli.command()
+@click.pass_context
+def nasa(ctx):
+    """Command to process raw NASA data"""
+    fnames = __get_file_names_helper(raw_data_dir, 'txt')
+
+    for k, v in fnames.items():
+        print('Processing NASA data: {}... '.format(k), end='', flush=True)
+
+        output = __process_nasa_data(k, v)
+        if output is None:
+            print('ERROR')
+            continue
+
+        with open(os.path.join(proc_data_dir, k + ".pkl"), 'wb') as fout:
+            pickle.dump(output, fout)
+        print('DONE')
+
 
 
 #

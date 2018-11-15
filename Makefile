@@ -47,6 +47,7 @@ continue_get_data:
 
 process_data:
 	@$(PYTHON) src/process_data.py wunderground
+	@$(PYTHON) src/process_data.py nasa
 
 clear_data:
 	@rm data/raw/*.pkl
