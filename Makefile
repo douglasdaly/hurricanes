@@ -53,3 +53,9 @@ clear_data:
 	@rm data/raw/*.pkl
 	@rm data/raw/*.txt
 	@rm data/processed/*.pkl
+
+# - Media Related
+.phony: clear_media
+
+clear_media:
+	@rm media/*.*
