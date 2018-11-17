@@ -12,6 +12,7 @@ jupyter = "*"
 click = "*"
 matplotlib = "*"
 papermill = "*"
+scikit-learn = "*"
 
 [dev-packages]
 spyder = "*"
