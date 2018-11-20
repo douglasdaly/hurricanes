@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "88db43befd7ddfdb7a5175aec5953ae6ba19f888d7cda192be3a29b9efc4634f"
+            "sha256": "9ee3b7287818484e4293461a11929a4e4294f5743f2b910afab1856695638fbe"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -438,10 +438,10 @@
         },
         "notebook": {
             "hashes": [
-                "sha256:24f38c9cc7d7bd0a4c429cc8381e602e58b2b176d6071096a09a0e6c9cd0b463",
-                "sha256:5cff23bf1b6385ede54f130f64ec58b9147a454f43d06d173817e0263005ce18"
+                "sha256:661341909008d1e7bfa1541904006f9789fa3de1cbec8379d2879819454cc04b",
+                "sha256:91705b109fc785198faed892489cddb233265564d5e2dad5e4f7974af05ee8dd"
             ],
-            "version": "==5.7.1"
+            "version": "==5.7.2"
         },
         "numpy": {
             "hashes": [
@@ -736,6 +736,14 @@
                 "sha256:f25c281f12c0da726c6ed00535ca5d1622ec755c30a3f8eafef26cf43fede694"
             ],
             "version": "==1.1.0"
+        },
+        "seaborn": {
+            "hashes": [
+                "sha256:42e627b24e849c2d3bbfd059e00005f6afbc4a76e4895baf44ae23fe8a4b09a5",
+                "sha256:76c83f794ca320fb6b23a7c6192d5e185a5fcf4758966a0c0a54baee46d41e2f"
+            ],
+            "index": "pypi",
+            "version": "==0.9.0"
         },
         "send2trash": {
             "hashes": [
@@ -1071,11 +1079,11 @@
         },
         "keyring": {
             "hashes": [
-                "sha256:2a5cf5e596cbf8b66b98b8df2c214adfe21e6e18baa82006b2c482bd0c4be94c",
-                "sha256:95e4f1d0342d0bf5d137d1d2352d59f7abbebb1507bec1ac26831c411ac23150"
+                "sha256:e605f00553c083eaaa8620b29edeea40323c5c5117b64267654f529951e3245c",
+                "sha256:e9d58fcb4e559f13ae7d10df301cef45ef2786ef8162a648373f8566b1761eb0"
             ],
             "markers": "sys_platform != 'linux2'",
-            "version": "==16.0.2"
+            "version": "==16.1.0"
         },
         "lazy-object-proxy": {
             "hashes": [

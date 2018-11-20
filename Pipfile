@@ -13,6 +13,7 @@ click = "*"
 matplotlib = "*"
 papermill = "*"
 scikit-learn = "*"
+seaborn = "*"
 
 [dev-packages]
 spyder = "*"
