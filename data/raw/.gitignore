@@ -1,3 +1,4 @@
 # Raw Data Files
 *.pkl
 *.txt
+*.csv

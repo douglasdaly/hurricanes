@@ -327,6 +327,20 @@ def __process_nasa_temp_data(file):
     return temp_data
 
 
+def process_nasa_sea_surface_data(name, file):
+    """Processes NASA Sea Surface Temperature data"""
+    dt = datetime.strptime(name[-8:], '%Y%m%d')
+    temp_data = pd.read_csv(file, sep=',', header=None)
+    temp_data = temp_data.where(temp_data != 99999.0)
+
+    temp_data.index = list(range(-90, 90))
+    temp_data.index.name = 'Longitude'
+    temp_data.columns = list(range(-180, 180))
+    temp_data.columns.name = 'Latitude'
+
+    return dt, temp_data
+
+
 #
 #   Script Functions
 #
@@ -379,8 +393,8 @@ def wunderground(ctx, regions, years, storms):
 @click.pass_context
 def nasa(ctx):
     """Command to process raw NASA data"""
+    # - Global Data
     fnames = __get_file_names_helper(raw_data_dir, 'txt')
-
     for k, v in fnames.items():
         print('Processing NASA data: {}... '.format(k), end='', flush=True)
 
@@ -392,6 +406,20 @@ def nasa(ctx):
         with open(os.path.join(proc_data_dir, k + ".pkl"), 'wb') as fout:
             pickle.dump(output, fout)
         print('DONE')
+
+    # - Sea surface temperature data
+    print('Processing NASA sea surface data... ', end='', flush=True)
+
+    fnames = __get_file_names_helper(raw_data_dir, 'csv')
+    sea_surface_data = dict()
+    for k, v in fnames.items():
+        t_dt, t_data = process_nasa_sea_surface_data(k, v)
+        sea_surface_data[t_dt] = t_data
+
+    with open(os.path.join(proc_data_dir, 'sea_surface_temps.pkl'), 'wb') as fout:
+        pickle.dump(sea_surface_data, fout)
+
+    print('DONE')
 
 
 

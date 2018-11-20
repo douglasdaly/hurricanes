@@ -12,9 +12,11 @@ get_data.py
 #   Imports
 #
 import os
+import re
 import time
 import pickle
 import urllib.request
+from datetime import datetime
 
 import click
 from bs4 import BeautifulSoup
@@ -40,6 +42,10 @@ region_dict = {
 nasa_temp_anomaly = 'http://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt'
 nasa_sea_level = 'ftp://podaac.jpl.nasa.gov/allData/merged_alt/L2/TP_J1_OSTM/global_mean_sea_level/GMSL_TPJAOS_4.2_199209_201807.txt'
 nasa_co2_data = 'ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt'
+
+sea_surface_temp_main = 'https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MYD28M&year={}'
+nasa_sea_surface_temp = 'http://neo.sci.gsfc.nasa.gov/servlet/RenderData?si={}&cs=rgb&format=CSV&width=360&height=180'
+
 
 #
 #   Functions
@@ -144,6 +150,31 @@ def get_storm_page_data(region_code, year, storm_id):
         ret.append(t_data)
 
     return ret
+
+
+# - NASA
+
+def get_sea_surface_file_codes_for_year(year):
+    """Helper to get file codes for given calendar year"""
+    url = sea_surface_temp_main.format(year)
+    soup = get_soup(url)
+
+    p_code = re.compile("\('([0-9]\w+)'")
+    p_date = re.compile("'([0-9]+-[0-9]+-[0-9]+)'")
+
+    codes = dict()
+
+    month_selects = soup.findAll('div', class_='slider-elem month')
+    for ms in month_selects:
+        t_js = ms.find('a').attrs['onclick']
+
+        t_code = p_code.findall(t_js)
+        t_date = p_date.findall(t_js)
+
+        if len(t_code) == 1 and len(t_date) == 1:
+            codes[datetime.strptime(t_date[0], '%Y-%m-%d').date()] = t_code[0]
+
+    return codes
 
 
 #
@@ -264,6 +295,7 @@ def wunderground(ctx, regions, years, storms):
 @cli.command()
 def nasa():
     """Gets global temperature data from NASA"""
+    # - Misc. Global Temperature Data
     links = {
         'Temperature anomaly': (nasa_temp_anomaly, 'nasa_temperature_anomaly.txt'),
         'Global sea-level': (nasa_sea_level, 'nasa_sea_level.txt'),
@@ -276,6 +308,22 @@ def nasa():
 
         with open('data/raw/{}'.format(output), 'wb') as fout:
             fout.write(temp_txt)
+        print('DONE')
+
+    # - Sea Surface Temperature Data
+    print('Getting NASA Sea-Surface Temperature file names... ', end='', flush=True)
+    all_codes = dict()
+    for yr in range(2002, datetime.today().year+1):
+        t_codes = get_sea_surface_file_codes_for_year(yr)
+        if t_codes is not None and len(t_codes) > 0:
+            all_codes = {**all_codes, **t_codes}
+    print('DONE')
+
+    for dt, code in all_codes.items():
+        print('Downloading Sea Surface Temp data for {}... '.format(dt), end='', flush=True)
+        t_data = get_data(nasa_sea_surface_temp.format(code))
+        with open('data/raw/nasa_sea_temp_{}.csv'.format(dt.strftime('%Y%m%d')), 'wb') as fout:
+            fout.write(t_data)
         print('DONE')
 
 
