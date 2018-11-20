@@ -1,6 +1,6 @@
 # Hurricane Data Analysis
 
-*An analysis of historical hurricane/cyclone data from Weather Underground.*
+*An analysis of historical tropical cyclone data from Weather Underground and global climate data from NASA and NOAA.*
 
 -----
 
@@ -34,6 +34,7 @@ Until you see the output:
 
 > ```Pulling storm data... DONE```
 
+The NASA and NOAA data will download before the Weather Underground data and should not be a problem.
 
 ### Processed Data
 
@@ -43,11 +44,11 @@ Once you've downloaded the raw data files you can run:
 $ make process_data
 ```
 
-To process the raw data and save local copies.
+To process the raw data and save local copies of the (lightly) processed data to local ```.pkl``` files for further research.
 
 
 ## License
 
 This project's code is licensed under the MIT license.  See the `LICENSE` file for more information.
 
-Data for this project was acquired from the (https://www.weatherunderground.com/)[Weather Underground] website.
+Data for this project was acquired from the [Weather Underground](https://www.wunderground.com/) website, [NASA](https://climate.nasa.gov/) and [NOAA](https://www.ncdc.noaa.gov/).
