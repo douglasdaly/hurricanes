@@ -38,13 +38,17 @@ region_dict = {
         "Indian Ocean": 'si'
 }
 
-# - NASA Temperature Data
+# - NASA Data
 nasa_temp_anomaly = 'http://climate.nasa.gov/system/internal_resources/details/original/647_Global_Temperature_Data_File.txt'
 nasa_sea_level = 'ftp://podaac.jpl.nasa.gov/allData/merged_alt/L2/TP_J1_OSTM/global_mean_sea_level/GMSL_TPJAOS_4.2_199209_201807.txt'
 nasa_co2_data = 'ftp://aftp.cmdl.noaa.gov/products/trends/co2/co2_mm_mlo.txt'
 
 sea_surface_temp_main = 'https://neo.sci.gsfc.nasa.gov/view.php?datasetId=MYD28M&year={}'
 nasa_sea_surface_temp = 'http://neo.sci.gsfc.nasa.gov/servlet/RenderData?si={}&cs=rgb&format=CSV&width=360&height=180'
+
+# - NOAA Data
+noaa_ratpac_b_url = "https://www1.ncdc.noaa.gov/pub/data/ratpac/ratpac-b/RATPAC-B-monthly-combined.txt.zip"
+noaa_ratpac_stations_url = "https://www1.ncdc.noaa.gov/pub/data/ratpac/ratpac-stations.txt"
 
 
 #
@@ -293,7 +297,8 @@ def wunderground(ctx, regions, years, storms):
 
 
 @cli.command()
-def nasa():
+@click.pass_context
+def nasa(ctx):
     """Gets global temperature data from NASA"""
     # - Misc. Global Temperature Data
     links = {
@@ -325,6 +330,23 @@ def nasa():
         with open('data/raw/nasa_sea_temp_{}.csv'.format(dt.strftime('%Y%m%d')), 'wb') as fout:
             fout.write(t_data)
         print('DONE')
+
+@cli.command()
+@click.pass_context
+def noaa(ctx):
+    """Gets stratosphere temperature data from NOAA"""
+    # - NOAA RATPAC Data
+    print('Downloading NOAA RATPAC station data... ', end='', flush=True)
+    t_data = get_data(noaa_ratpac_stations_url)
+    with open('data/raw/ratpac_stations.txt', 'wb') as fout:
+        fout.write(t_data)
+    print('DONE')
+
+    print('Downloading NOAA RATPAC-B data... ', end='', flush=True)
+    t_data = get_data(noaa_ratpac_b_url)
+    with open('data/raw/ratpac_b.zip', 'wb') as fout:
+        fout.write(t_data)
+    print('DONE')
 
 
 #

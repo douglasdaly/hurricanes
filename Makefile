@@ -40,6 +40,7 @@ generate_requirements:
 
 get_data:
 	@$(PYTHON) src/get_data.py nasa
+	@$(PYTHON) src/get_data.py noaa
 	@$(PYTHON) src/get_data.py wunderground
 
 continue_get_data:
@@ -48,10 +49,13 @@ continue_get_data:
 process_data:
 	@$(PYTHON) src/process_data.py wunderground
 	@$(PYTHON) src/process_data.py nasa
+	@$(PYTHON) src/process_data.py noaa
 
 clear_data:
 	@rm data/raw/*.pkl
 	@rm data/raw/*.txt
+	@rm data/raw/*.csv
+	@rm data/raw/*.zip
 	@rm data/processed/*.pkl
 
 # - Media Related

@@ -13,6 +13,9 @@ process_data.py
 #
 import os
 import pickle
+import shutil
+import zipfile
+import tempfile
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
@@ -341,6 +344,67 @@ def process_nasa_sea_surface_data(name, file):
     return dt, temp_data
 
 
+# - NOAA Functions
+
+def noaa_process_ratpac_station_file(file):
+    """Helper to process station data text file"""
+    # - Read and process text data
+    with open(os.path.join(raw_data_dir, file), 'r') as fin:
+        station_lines = fin.readlines()
+
+    header_line = station_lines[14].strip().split()[:-1] \
+                  + ['OBSTIME_1', 'OBSTIME_2', 'OBSTIME_3']
+    data_lines = station_lines[15:]
+
+    proc_lines = list()
+    for line in data_lines:
+        station_name = line[:37].strip()
+        rem_data = line[37:].strip().split()
+        p_line = [station_name] + rem_data
+        proc_lines.append(p_line)
+
+    # - Convert to dataframe and return
+    station_data = pd.DataFrame(proc_lines, columns=header_line)
+    station_data.index = [x+1 for x in station_data.index]
+    station_data.index.name = 'Rank'
+
+    return station_data.where(station_data != '...')
+
+
+def noaa_process_ratpac_data(file):
+    """Helper function to process RATPAC-B data file"""
+    # - Unzip data file, load contents and remove temp file
+    zip_ref = zipfile.ZipFile(os.path.join(raw_data_dir, file), 'r')
+    tmp_dir = tempfile.mkdtemp()
+    zip_ref.extractall(tmp_dir)
+
+    with open(os.path.join(tmp_dir, zip_ref.filelist[0].filename), 'r') as fin:
+        all_lines = fin.readlines()
+
+    shutil.rmtree(tmp_dir)
+
+    # - Process file contents
+    proc_lines = list()
+    for line in all_lines:
+        station_no = int(line[:3].strip())
+        year = int(line[4:8].strip())
+        month = int(line[8:12].strip())
+        data_pts = [float(x.strip()) for x in line[12:103].split()]
+        station_id = line[106:111]
+
+        proc_lines.append([station_no, year, month] + data_pts + [station_id])
+
+    # - Convert to DataFrame and return
+    header_cols = ['station_number', 'year', 'month']
+    header_cols += ['surface', '850mb', '700mb', '500mb', '400mb', '300mb',
+                    '250mb', '200mb', '150mb', '100mb', '70mb', '50mb', '30mb']
+    header_cols += ['station_id']
+
+    ret = pd.DataFrame(proc_lines, columns=header_cols)
+
+    return ret.where(ret != 999.0)
+
+
 #
 #   Script Functions
 #
@@ -396,6 +460,9 @@ def nasa(ctx):
     # - Global Data
     fnames = __get_file_names_helper(raw_data_dir, 'txt')
     for k, v in fnames.items():
+        if k.lower().startswith('ratpac'):
+            continue
+
         print('Processing NASA data: {}... '.format(k), end='', flush=True)
 
         output = __process_nasa_data(k, v)
@@ -421,6 +488,23 @@ def nasa(ctx):
 
     print('DONE')
 
+
+@cli.command()
+@click.pass_context
+def noaa(ctx):
+    """Command to process raw NOAA data"""
+    # - RATPAC Data
+    print('Processing RATPAC station data... ', end='', flush=True)
+    station_data = noaa_process_ratpac_station_file('ratpac_stations.txt')
+    with open(os.path.join(proc_data_dir, 'ratpac_stations.pkl'), 'wb') as fout:
+        pickle.dump(station_data, fout)
+    print('DONE')
+
+    print('Processing RATPAC-B data file... ', end='', flush=True)
+    ratpac_data = noaa_process_ratpac_data('ratpac_b.zip')
+    with open(os.path.join(proc_data_dir, 'ratpac_b.pkl'), 'wb') as fout:
+        pickle.dump(ratpac_data, fout)
+    print('DONE')
 
 
 #
