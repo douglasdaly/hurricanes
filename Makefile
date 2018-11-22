@@ -36,7 +36,7 @@ generate_requirements:
 	$(GEN_REQUIREMENTS)
 
 # - Data related
-.phony: get_data continue_get_data process_data clear_data
+.phony: get_data continue_get_data process_data generate_features clear_data
 
 get_data:
 	@$(PYTHON) src/get_data.py nasa
@@ -51,12 +51,16 @@ process_data:
 	@$(PYTHON) src/process_data.py nasa
 	@$(PYTHON) src/process_data.py noaa
 
+generate_features:
+	@$(PYTHON) src/generate_features.py noaa
+
 clear_data:
 	@rm data/raw/*.pkl
 	@rm data/raw/*.txt
 	@rm data/raw/*.csv
 	@rm data/raw/*.zip
 	@rm data/processed/*.pkl
+	@rm data/features/*.pkl
 
 # - Media Related
 .phony: clear_media

@@ -4,6 +4,16 @@
 
 -----
 
+## Prerequisites
+
+For the cartopy package you'll need to have installed the [GEOS](https://trac.osgeo.org/geos/) and [PROJ](https://proj4.org/) libraries.  On linux the packages are:
+
+ - `libproj-dev`
+ - `proj-data`
+ - `proj-bin`
+ - `libgeos-dev`
+
+
 ## Setup
 
 Configure your options in the ```Makefile```, specifically the ```REQUIREMENTS_ENGINE``` variable (either ```pip``` or ```pipenv```).  Also, if your default system ```python``` is not Python 3 you'll want to change the ```PYTHON``` variable to match the command for Python 3 (likely ```python3``` on *nix systems).
@@ -46,6 +56,15 @@ $ make process_data
 
 To process the raw data and save local copies of the (lightly) processed data to local ```.pkl``` files for further research.
 
+### Feature Data
+
+Once the data has been processed you can then generate some of the more interesting and further-processed feature data with the command:
+
+```bash
+$ make generate_features
+```
+
+Note: This could be time-consuming depending upon your system.  There's an interpolation calculation on the NOAA temperature data which is fairly heavy computationally (the code is designed to take advantage of multi-core systems).
 
 ## License
 
