@@ -16,6 +16,7 @@ import pickle
 import calendar
 from datetime import datetime, timedelta
 import multiprocessing
+import psutil
 
 import numpy as np
 import pandas as pd
@@ -90,9 +91,6 @@ def __get_point_data_for_interpolation(noaa_data):
             dt = unq_dates[i_dt]
             t_values = noaa_data.loc[dt, nm]
 
-            if len(t_values) <= 0:
-                continue
-
             r_lons, r_lats = zip(*t_values.index.values)
             r_lons = np.array(r_lons)
             r_lats = np.array(r_lats)
@@ -101,7 +99,11 @@ def __get_point_data_for_interpolation(noaa_data):
             t_values = t_values.values
             t_points = t_points[~np.isnan(t_values)]
             t_values = t_values[~np.isnan(t_values)]
-            orig_point_data[nm].append((t_points, t_values))
+
+            if len(t_values) <= 0:
+                continue
+
+            orig_point_data[nm].append((unq_dates[i_dt], t_points, t_values))
 
             # - Tesselate for boundary wrap (probably a better way to do this)
             t_nrmpts = t_points.copy()
@@ -130,14 +132,14 @@ def __get_point_data_for_interpolation(noaa_data):
 
             quad_pts = quad_pts[qpt_mask]
             quad_vls = quad_vls[qpt_mask]
-            interp_point_data[nm].append((quad_pts, quad_vls))
+            interp_point_data[nm].append((unq_dates[i_dt], quad_pts, quad_vls))
 
     return orig_point_data, interp_point_data
 
 
 def __map_wrap_do_interpolation_single_point(args):
     """Pool mapper wrapper for __do_interpolation_single_point function"""
-    return __do_interpolation_single_point(*args)
+    return args[0], __do_interpolation_single_point(*args[1:])
 
 
 def __do_interpolation_single_point(points, values, method):
@@ -148,10 +150,14 @@ def __do_interpolation_single_point(points, values, method):
     return t_result[180:(180+360), 90:(90+180)]
 
 
-def __do_interpolation_multi_thread(point_data, method, show_progress, max_processes=None):
+def __do_interpolation_multi_thread(point_data, method, show_progress, max_processes=None,
+                                    chunk_size=1):
     """Does interpolation calculations in a multi-threaded fashion"""
     if max_processes is None:
-        max_processes = multiprocessing.cpu_count()
+        max_processes = psutil.cpu_count(logical=False)
+
+    if max_processes == 1:
+        return __do_interpolation_single_thread(point_data, method, show_progress)
 
     status_str = "Interpolating {} data"
 
@@ -160,13 +166,15 @@ def __do_interpolation_multi_thread(point_data, method, show_progress, max_proce
         if not show_progress:
             print(status_str.format(nm) + "... ", end='', flush=True)
             with multiprocessing.Pool(max_processes) as p:
-                interp_results[nm] = p.starmap(__do_interpolation_single_point,
-                                               [(*x, method) for x in t_intrp_data])
+                interp_results[nm] = dict(p.imap_unordered(__map_wrap_do_interpolation_single_point,
+                                                           [(*x, method) for x in t_intrp_data],
+                                                           chunk_size))
             print('DONE')
         else:
             with multiprocessing.Pool(max_processes) as p:
-                interp_results[nm] = list(tqdm(p.imap(__map_wrap_do_interpolation_single_point,
-                                                      [(*x, method) for x in t_intrp_data]),
+                interp_results[nm] = dict(tqdm(p.imap_unordered(__map_wrap_do_interpolation_single_point,
+                                                                [(*x, method) for x in t_intrp_data],
+                                                                chunk_size),
                                                desc=status_str.format(nm), total=len(t_intrp_data),
                                                leave=False))
             print('\r' + status_str.format(nm) + '... DONE', flush=True)
@@ -178,7 +186,7 @@ def __do_interpolation_single_thread(point_data, method, show_progress):
     """Does interpolation calculations on the given point data"""
     interp_results = dict()
     for nm, t_intrp_data in point_data.items():
-        interp_results[nm] = np.zeros((len(t_intrp_data), 360, 180))
+        interp_results[nm] = dict()
 
         status_str = 'Interpolating {} data'.format(nm)
 
@@ -189,9 +197,9 @@ def __do_interpolation_single_thread(point_data, method, show_progress):
             print(status_str + '... ', end='', flush=True)
 
         for i_dt in to_iter:
-            intrp_pts, intrp_vals = t_intrp_data[i_dt]
+            t_dt, intrp_pts, intrp_vals = t_intrp_data[i_dt]
             t_result = __do_interpolation_single_point(intrp_pts, intrp_vals, method)
-            interp_results[nm][i_dt] = t_result
+            interp_results[nm][t_dt] = t_result
 
         done_str = 'DONE'
         if show_progress:
@@ -206,10 +214,9 @@ def __do_interpolation_single_thread(point_data, method, show_progress):
 #   Main Helpers
 #
 
-def helper_generate_noaa_interpolation_data(data_dir, pressure_levels,
-                                            out_name='aloft', start_year=1965,
-                                            method='gaussian', show_progress=True,
-                                            multi_thread=True, max_processes=None):
+def generate_noaa_interpolation_data(data_dir, pressure_levels, out_name='aloft',
+                                     start_year=1965, method='multiquadric', show_progress=True,
+                                     multi_thread=True, max_processes=None, chunk_size=1):
     """Function to generate interpolations for NOAA temperature data"""
     print('Loading processed data... ', end='', flush=True)
     proc_data = __load_noaa_processed_data(data_dir)
@@ -225,7 +232,7 @@ def helper_generate_noaa_interpolation_data(data_dir, pressure_levels,
 
     if multi_thread:
         interp_results = __do_interpolation_multi_thread(interp_pt_data, method, show_progress,
-                                                         max_processes)
+                                                         max_processes, chunk_size)
     else:
         interp_results = __do_interpolation_single_thread(interp_pt_data, method, show_progress)
 

@@ -15,7 +15,7 @@ import os
 import pickle
 import click
 
-from noaa_features_helpers import helper_generate_noaa_interpolation_data
+from noaa_features_helpers import generate_noaa_interpolation_data
 
 
 #
@@ -35,6 +35,7 @@ def noaa(ctx):
     """Functions for operating on NOAA data"""
     ctx.ensure_object(dict)
 
+
 @noaa.command()
 @click.pass_context
 @click.option('--input_dir', default='data/processed', type=str, help='Processed data dir for input data')
@@ -42,12 +43,13 @@ def noaa(ctx):
 @click.option('--pressure-levels', default='200,150,100,70', type=str, help='Pressure levels to average')
 @click.option('--out-name', default='aloft', type=str, help='Combined pressure levels name')
 @click.option('--start-year', default=1965, type=int, help='Starting year to cut data to')
-@click.option('--method', default='gaussian', type=str, help='RBF function method to use')
+@click.option('--method', default='multiquadric', type=str, help='RBF function method to use')
 @click.option('--progress/--no-progress', default=True, help='Show progress bar during calculations')
 @click.option('--multi-thread/--single-thread', default=True, help='Do calculations with multi-threading')
 @click.option('--max-processes', default=None, type=int, help='Max processes to run multi-threaded')
+@click.option('--chunk-size', default=1, type=int, help='Chunk size for multi-processing')
 def interpolate(ctx, input_dir, output_dir, pressure_levels, out_name, start_year,
-                method, progress, multi_thread, max_processes):
+                method, progress, multi_thread, max_processes, chunk_size):
     """Generates interpolation data for NOAA temperatures"""
     # - Arg handling
     progress = True
@@ -55,9 +57,9 @@ def interpolate(ctx, input_dir, output_dir, pressure_levels, out_name, start_yea
                 for x in pressure_levels.split(',')]
 
     # - Do calculation
-    orig_pt_data, interpolated_data = helper_generate_noaa_interpolation_data(input_dir,
-                                          p_levels, out_name, start_year, method, progress,
-                                          multi_thread)
+    orig_pt_data, interpolated_data = generate_noaa_interpolation_data(input_dir, p_levels,
+                                          out_name, start_year, method, progress, multi_thread,
+                                          max_processes, chunk_size)
 
     # - Save output
     print('Saving original point data output... ', end='', flush=True)
