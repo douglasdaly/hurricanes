@@ -230,10 +230,14 @@ def generate_noaa_interpolation_data(data_dir, pressure_levels, out_name='aloft'
     orig_pt_data, interp_pt_data = __get_point_data_for_interpolation(cut_data)
     print('DONE')
 
+    output_orig_data = dict()
+    for nm in orig_pt_data.keys():
+        output_orig_data[nm] = dict([(x[0], (x[1], x[2])) for x in orig_pt_data[nm]])
+
     if multi_thread:
         interp_results = __do_interpolation_multi_thread(interp_pt_data, method, show_progress,
                                                          max_processes, chunk_size)
     else:
         interp_results = __do_interpolation_single_thread(interp_pt_data, method, show_progress)
 
-    return orig_pt_data, interp_results
+    return output_orig_data, interp_results

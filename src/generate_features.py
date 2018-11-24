@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 generate_features.py
@@ -61,16 +61,19 @@ def interpolate(ctx, input_dir, output_dir, pressure_levels, out_name, start_yea
                                           out_name, start_year, method, progress, multi_thread,
                                           max_processes, chunk_size)
 
-    # - Save output
-    print('Saving original point data output... ', end='', flush=True)
-    with open(os.path.join(output_dir, 'noaa_orig_point_data.pkl'), 'wb') as fout:
-        pickle.dump(orig_pt_data, fout)
-    print('DONE')
+    # - Save outputs
+    for nm in orig_pt_data.keys():
+        t_opt_data = orig_pt_data[nm]
+        print('Saving {} original point data... '.format(nm), end='', flush=True)
+        with open(os.path.join(output_dir, 'noaa_{}_origpt_data.pkl'.format(nm)), 'wb') as fout:
+            pickle.dump(t_opt_data, fout)
+        print('DONE')
 
-    print('Saving interpolation output data... ', end='', flush=True)
-    with open(os.path.join(output_dir, 'noaa_interpolated_point_data.pkl'), 'wb') as fout:
-        pickle.dump(interpolated_data, fout)
-    print('DONE')
+        t_intrp_data = interpolated_data[nm]
+        print('Saving {} interpolation data... '.format(nm), end='', flush=True)
+        with open(os.path.join(output_dir, 'noaa_{}_interpolated_data.pkl'.format(nm)), 'wb') as fout:
+            pickle.dump(t_intrp_data, fout)
+        print('DONE')
 
 
 #
