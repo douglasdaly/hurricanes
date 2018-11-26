@@ -21,6 +21,8 @@ cython = "*"
 pyproj = "*"
 cartopy = "*"
 tqdm = "*"
+moviepy = "*"
+optimage = "*"
 
 [dev-packages]
 spyder = "*"

@@ -230,6 +230,7 @@ def generate_noaa_interpolation_data(data_dir, pressure_levels, out_name='aloft'
     orig_pt_data, interp_pt_data = __get_point_data_for_interpolation(cut_data)
     print('DONE')
 
+    # - Do the interpolation
     output_orig_data = dict()
     for nm in orig_pt_data.keys():
         output_orig_data[nm] = dict([(x[0], (x[1], x[2])) for x in orig_pt_data[nm]])
@@ -239,5 +240,21 @@ def generate_noaa_interpolation_data(data_dir, pressure_levels, out_name='aloft'
                                                          max_processes, chunk_size)
     else:
         interp_results = __do_interpolation_single_thread(interp_pt_data, method, show_progress)
+
+    # - Generate difference data set
+    print('Generating difference set... ', end='', flush=True)
+    output_orig_data['diff'] = output_orig_data['surface'].copy()
+    for k, v in output_orig_data['diff'].items():
+        t_out = v[1].copy()
+        t_sub_k = output_orig_data[out_name][k][0]
+        t_sub_v = output_orig_data[out_name][k][1]
+        for pos_tup in v[0]:
+            t_out[(v[0] == pos_tup).all(axis=1)] -= t_sub_v[(t_sub_k == pos_tup).all(axis=1)]
+        output_orig_data['diff'][k] = (v[0], t_out)
+
+    interp_results['diff'] = interp_results['surface'].copy()
+    for k in interp_results['diff'].keys():
+        interp_results['diff'][k] -= interp_results[out_name][k]
+    print('DONE')
 
     return output_orig_data, interp_results
