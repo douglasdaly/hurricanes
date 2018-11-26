@@ -72,7 +72,8 @@ def __heatmap_plot_data(data, zorder=None, color=None, marker=None, color_map=No
 
 
 def __heatmap_draw_plots(li_plt, ax, markers=['x', '.', 'o'], colors=['b', 'r', 'g'],
-                         color_map=None, vmin=None, vmax=None):
+                         color_map=None, center=None, vmin=None, vmax=None,
+                         show_colorbar=False, colorbar_label=None):
     """Helper function to draw the given plots"""
     i_z = 2
     i_m = 0
@@ -82,8 +83,29 @@ def __heatmap_draw_plots(li_plt, ax, markers=['x', '.', 'o'], colors=['b', 'r', 
     for i_pd in range(len(li_plt)):
         plt_dat = li_plt[i_pd]
         if isinstance(plt_dat, np.ndarray):
-            axr.append(__heatmap_plot_data(plt_dat, zorder=i_z, color_map=color_map, alpha=0.5,
-                                           vmin=vmin, vmax=vmax, ax=ax))
+            plt_normed = plt_dat.copy()
+            if center is not None:
+                if vmin is None:
+                    vmin = plt_dat.min()
+                if vmax is None:
+                    vmax = plt_dat.max()
+
+                if np.abs(vmin) < np.abs(vmax):
+                    vmin = np.abs(vmax) * np.sign(vmin)
+                else:
+                    vmax = np.abs(vmin) * np.sign(vmax)
+
+                plt_normed[plt_dat < center] = np.maximum(plt_dat[plt_dat < center] / vmin, -1) * vmin
+                plt_normed[plt_dat >= center] = np.minimum(plt_dat[plt_dat >= center]/ np.abs(vmax), 1) * vmax
+
+            t_axr = __heatmap_plot_data(plt_normed, zorder=i_z, color_map=color_map, alpha=0.5,
+                                        vmin=vmin, vmax=vmax, ax=ax)
+            if show_colorbar:
+                cbar = plt.colorbar(t_axr, shrink=0.8)
+                if colorbar_label is not None:
+                    cbar.set_label(colorbar_label)
+
+            axr.append(t_axr)
         else:
             axr.append(__heatmap_plot_data(plt_dat[0], zorder=i_z, color=colors[i_c], marker=markers[i_m],
                                            ax=ax))
@@ -92,6 +114,7 @@ def __heatmap_draw_plots(li_plt, ax, markers=['x', '.', 'o'], colors=['b', 'r', 
         i_z += 1
 
     return axr
+
 
 def __index_helper(to_search, index):
     """Helper function to get correct index for to_search array"""
@@ -191,6 +214,8 @@ def heatmap(ctx, figsize_width, figsize_height, color_map, dpi):
 @click.argument('input_files', type=str)
 @click.option('--output', type=str, default=None, help='Output file to save media as')
 @click.option('--smooth', type=int, default=None, help='Average this number of data points together')
+@click.option('--show-colorbar', is_flag=True, default=False, help='Append the colorbar scale to the plot')
+@click.option('--colorbar-label', type=str, default=None, help='Label for the displayed color bar')
 @click.option('--percentile', type=int, default=5, help='Percentile to use for min/max values')
 @click.option('--title', type=str, default=None, help='Figure title to use')
 @click.option('--index', type=str, default=None, help='Index to use from input data')
@@ -199,8 +224,8 @@ def heatmap(ctx, figsize_width, figsize_height, color_map, dpi):
 @click.option('--fps', type=int, default=12, help='FPS to use in animation gif')
 @click.option('--compress', is_flag=True, default=False, help='Compress output files')
 @click.option('--use-optimage', is_flag=True, default=False, help='Use optimage tool to further compress files')
-def globe(ctx, input_files, output, smooth, percentile, title, index, end_index, animate, fps,
-          compress, use_optimage):
+def globe(ctx, input_files, output, smooth, show_colorbar, colorbar_label, percentile,
+          title, index, end_index, animate, fps, compress, use_optimage):
     """Generates heatmaps plotted with global coastlines in the background"""
     # - Context/arg handling
     fig_sz = (ctx.obj.get('figsize_width', None), ctx.obj.get('figsize_height', None))
@@ -366,7 +391,8 @@ def globe(ctx, input_files, output, smooth, percentile, title, index, end_index,
         ax.yaxis.set_visible(True)
         ax.grid(True, color='grey', linestyle='--', alpha=1, zorder=1)
 
-        __heatmap_draw_plots(li_plt, ax, color_map=cm, vmin=vmin, vmax=vmax)
+        __heatmap_draw_plots(li_plt, ax, color_map=cm, center=0., vmin=vmin, vmax=vmax,
+                             show_colorbar=show_colorbar, colorbar_label=colorbar_label)
 
         if title is not None:
             fig.suptitle(title)
@@ -424,7 +450,6 @@ def globe(ctx, input_files, output, smooth, percentile, title, index, end_index,
         print('Removing temporary files... ', end='', flush=True)
         shutil.rmtree(tmp_dir)
         print('DONE')
-        print('Cleaning up...')
     else:
         print('DONE')
         if output is None:
