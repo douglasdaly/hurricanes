@@ -221,7 +221,7 @@ def heatmap(ctx, figsize_width, figsize_height, color_map, dpi):
 @click.option('--index', type=str, default=None, help='Index to use from input data')
 @click.option('--end-index', type=str, default=None, help='Ending index to use from input data')
 @click.option('--animate', is_flag=True, default=False, help='Create animation for output')
-@click.option('--fps', type=int, default=12, help='FPS to use in animation gif')
+@click.option('--fps', type=int, default=12, help='FPS to use in animation')
 @click.option('--compress', is_flag=True, default=False, help='Compress output files')
 @click.option('--use-optimage', is_flag=True, default=False, help='Use optimage tool to further compress files')
 def globe(ctx, input_files, output, smooth, show_colorbar, colorbar_label, percentile,
@@ -239,6 +239,15 @@ def globe(ctx, input_files, output, smooth, show_colorbar, colorbar_label, perce
 
     if output is None:
         compress = False
+    else:
+        if animate:
+            if output.lower().endswith('.mp4'):
+                output_gif = False
+            elif output.lower().endswith('gif'):
+                output_gif = True
+            else:
+                print('Invalid output file type specified for animation: {}'.format(output.split('.')[-1]))
+                return
 
     # - Load data
     print('Loading and formatting input data... ', end='', flush=True)
@@ -436,16 +445,19 @@ def globe(ctx, input_files, output, smooth, show_colorbar, colorbar_label, perce
             plt.close(fig)
 
     if len(out_list) > 1:
-        # - Create GIF
+        # - Create GIF/MP4
         print('\rGenerating individual plots... DONE', end='', flush=True)
 
         clip = mpy.ImageSequenceClip(out_list, fps=fps)
 
-        if shutil.which('magick') is None and shutil.which('convert') is None:
-            clip.write_gif(output, opt='nq')
+        if output_gif:
+            if shutil.which('magick') is None and shutil.which('convert') is None:
+                clip.write_gif(output, opt='nq')
+            else:
+                clip.write_gif(output, program='ImageMagick', opt='optimizeplus')
+                print()
         else:
-            clip.write_gif(output, program='ImageMagick', opt='optimizeplus')
-            print()
+            clip.write_videofile(output, audio=False)
 
         print('Removing temporary files... ', end='', flush=True)
         shutil.rmtree(tmp_dir)

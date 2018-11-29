@@ -79,7 +79,7 @@ clear_raw_data:
 	@rm data/raw/*.zip || true
 
 # - Media Related
-.phony: clear_media generate_media test_media
+.phony: clear_media generate_media
 
 clear_media:
 	@echo "[INFO] Clearing existing media..."
@@ -92,9 +92,9 @@ generate_media: clear_media
 	@$(PYTHON) src/generate_media.py notebook notebooks/4_nasa_processed_data_research.ipynb
 	@$(PYTHON) src/generate_media.py notebook notebooks/6_noaa_interpolated_feature_data_explore.ipynb
 	@echo "[INFO] Generating animated global heatmaps..."
-	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_surface_interpolated_data.pkl --output media/interp_animated_surface.gif --title "Surface Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
-	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_aloft_interpolated_data.pkl --output media/interp_animated_aloft.gif --title "Aloft Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
-	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_diff_interpolated_data.pkl --output media/interp_animated_diff.gif --title "Surface - Aloft Differential" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
+	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_surface_interpolated_data.pkl --output media/interp_animated_surface.mp4 --title "Surface Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
+	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_aloft_interpolated_data.pkl --output media/interp_animated_aloft.mp4 --title "Aloft Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
+	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_diff_interpolated_data.pkl --output media/interp_animated_diff.mp4 --title "Surface - Aloft Differential" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
 	@echo "[INFO] Generating static global heatmaps..."
 	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3 --dpi 72 globe data/features/noaa_surface_interpolated_data.pkl --output media/interp_1965_surface.png --title "Surface Temperature Anomaly" --percentile 15 --smooth 12 --index 1965 --show-colorbar --colorbar-label "Degrees Celsius"
 	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3 --dpi 72 globe data/features/noaa_surface_interpolated_data.pkl --output media/interp_2017_surface.png --title "Surface Temperature Anomaly" --percentile 15 --smooth 12 --index 2017 --show-colorbar --colorbar-label "Degrees Celsius"
