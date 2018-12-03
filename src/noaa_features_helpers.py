@@ -15,6 +15,7 @@ import os
 import pickle
 import calendar
 from datetime import datetime, timedelta
+import warnings
 import multiprocessing
 import psutil
 
@@ -74,7 +75,7 @@ def __get_relevant_data(all_noaa_data, pressure_levels, out_name, start_year):
     cut_data.drop(['LON', 'LAT'], axis=1, inplace=True)
     cut_data.set_index(['Date', 'Position'], inplace=True)
 
-    return cut_data
+    return cut_data.dropna(subset=['surface'])
 
 
 def __get_point_data_for_interpolation(noaa_data):
@@ -105,7 +106,7 @@ def __get_point_data_for_interpolation(noaa_data):
 
             orig_point_data[nm].append((unq_dates[i_dt], t_points, t_values))
 
-            # - Tesselate for boundary wrap (probably a better way to do this)
+            # - 'Tesselate' for boundary wrap (probably a better way to do this)
             t_nrmpts = t_points.copy()
             t_nrmpts[:, 0] += 180
             t_nrmpts[:, 1] += 90
@@ -115,8 +116,16 @@ def __get_point_data_for_interpolation(noaa_data):
             for i_x in range(3):
                 for i_y in range(3):
                     t_qpts = t_nrmpts.copy()
-                    t_qpts[:, 0] += 360 * i_x
-                    t_qpts[:, 1] += 180 * i_y
+                    x_add = 360 * i_x
+                    y_add = 180 * i_y
+
+                    # - Need to apply some transformations for boundary wraps
+                    if i_y != 1:
+                        t_qpts[:, 0] = 360 - t_qpts[:, 0]
+                        t_qpts[:, 1] = 180 - t_qpts[:, 1]
+
+                    t_qpts[:, 0] += x_add
+                    t_qpts[:, 1] += y_add
 
                     quad_pts.append(t_qpts)
                     quad_vls.append(t_values.copy())
@@ -126,6 +135,11 @@ def __get_point_data_for_interpolation(noaa_data):
 
             quad_pts[:, 0] -= (360 + 180)
             quad_pts[:, 1] -= (180 + 90)
+
+            # - Filter out unique coords (could have dupes from tiling)
+            _, unq_qpts_idx = np.unique(quad_pts, return_index=True, axis=0)
+            quad_pts = quad_pts[unq_qpts_idx, :]
+            quad_vls = quad_vls[unq_qpts_idx]
 
             qpt_mask = (quad_pts[:, 0] >= -360) & (quad_pts[:, 0] <= 360) \
                        & (quad_pts[:, 1] >= -180) & (quad_pts[:, 1] <= 180)
@@ -145,8 +159,10 @@ def __map_wrap_do_interpolation_single_point(args):
 def __do_interpolation_single_point(points, values, method):
     """Interpolates a single set of points"""
     gx, gy = np.mgrid[-360:360, -180:180]
+
     rbfi = interp.Rbf(points[:, 0], points[:, 1], values, function=method)
     t_result = rbfi(gx, gy)
+
     return t_result[180:(180+360), 90:(90+180)]
 
 
