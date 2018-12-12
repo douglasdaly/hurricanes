@@ -23,6 +23,7 @@ cartopy = "*"
 tqdm = "*"
 moviepy = "*"
 optimage = "*"
+jupyterlab = "*"
 
 [dev-packages]
 spyder = "*"

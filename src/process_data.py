@@ -154,6 +154,7 @@ def __process_region_year_data_helper(year, k, v):
     else:
         return v
 
+
 def __process_region_year_data(region, year, storm_id, storm_data):
     """Processes year-data to get storms"""
     unq_id = ''.join([x[0].upper() for x in region.split(' ')])

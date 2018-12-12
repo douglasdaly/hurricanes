@@ -10,3 +10,7 @@ __pycache__/
 # Misc
 *.backup
 *~
+
+# Notebooks
+.ipynb_checkpoints/
+*-checkpoint.ipynb
