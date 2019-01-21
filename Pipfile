@@ -26,7 +26,6 @@ optimage = "*"
 jupyterlab = "*"
 
 [dev-packages]
-spyder = "*"
 
 [requires]
 python_version = "3.6"

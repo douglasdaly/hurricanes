@@ -54,7 +54,7 @@ Once you've downloaded the raw data files you can run:
 $ make process_data
 ```
 
-To process the raw data and save local copies of the (lightly) processed data to local ```.pkl``` files for further research.  The tool [```process_data```] is utilized for this.  See that tool for further information.
+To process the raw data and save local copies of the (lightly) processed data to local ```.pkl``` files for further research.  The tool [```process_data```](./src/process_data.py) is utilized for this.  See that tool for further information.
 
 ### Feature Data
 
