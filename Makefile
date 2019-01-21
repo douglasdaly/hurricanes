@@ -7,71 +7,82 @@ REQUIREMENTS_ENGINE=pipenv
 
 
 #
-#	Variable Setup
+#	Setup
 #
 
 GEN_REQUIREMENTS=pip freeze --local > requirements.txt
 
 ifeq ($(REQUIREMENTS_ENGINE), pipenv)
-	INSTALL_REQS_CMD=pipenv install
-	RUN_PRE=pipenv run
-	PYTHON := $(RUN_PRE) $(PYTHON)
-	GEN_REQUIREMENTS := $(RUN_PRE) $(GEN_REQUIREMENTS)
+	RUN_PRE = pipenv run
+	INSTALL_REQS_CMD = pipenv install
+	GEN_REQUIREMENTS = pipenv lock -r > requirements.txt
 else
-	INSTALL_REQS_CMD=pip install -r requirements.txt
+	RUN_PRE = 
+	INSTALL_REQS_CMD = pip install -r requirements.txt
 endif
+
+PYTHON := $(RUN_PRE) $(PYTHON)
 
 
 #
 #	Recipes
 #
 
-# - Setup related
-.phony: requirements generate_requirements
+.PHONY: help requirements generate_requirements \
+		get_data continue_get_data process_data generate_features \
+		clear_raw_data clear_processed_data clear_features_data clear_data \
+		clear_media generate_media
 
-requirements:
+.DEFAULT_GOAL := help
+
+# - Setup related
+
+help: ## Prints help for this Makefile
+	@printf 'Usage: make \033[36m[target]\033[0m\n'
+	@echo ''
+	@echo 'Available targets:'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@echo ''
+
+requirements: ## Installs requirements for this project
 	$(INSTALL_REQS_CMD)
 
-generate_requirements:
+generate_requirements: ## Generates requirements.txt for this project
 	$(GEN_REQUIREMENTS)
 
-# - Data related
-.phony: get_data continue_get_data process_data generate_features
-
-get_data: clear_raw_data
+get_data: clear_raw_data ## Downloads data from the web for this project
 	@echo "[INFO] Getting raw data files..."
 	@$(PYTHON) src/get_data.py nasa
 	@$(PYTHON) src/get_data.py noaa
 	@$(PYTHON) src/get_data.py wunderground
 
-continue_get_data:
+continue_get_data:  ## Continues downloading data (if timed out or blocked)
 	@echo "[INFO] Continuing to get raw data files..."
 	@$(PYTHON) src/get_data.py wunderground --no-regions
 
-process_data: clear_processed_data
+process_data: clear_processed_data  ## Processes download data for use
 	@echo "[INFO] Processing raw data files..."
 	@$(PYTHON) src/process_data.py wunderground
 	@$(PYTHON) src/process_data.py nasa
 	@$(PYTHON) src/process_data.py noaa
 
-generate_features: clear_features_data
+generate_features: clear_features_data  ## Generates features from processed data
 	@echo "[INFO] Generating features data files..."
 	@$(PYTHON) src/generate_features.py noaa interpolate
 
 # - Cleaning related
-.phony: clear_raw_data clear_processed_data clear_features_data clear_data
 
-clear_data: clear_raw_data clear_processed_data clear_features_data
+clear_data: clear_raw_data clear_processed_data clear_features_data  ## Clears out all data for this project
 
-clear_features_data:
+clear_features_data:  ## Clears out features data files
 	@echo "[INFO] Clearing features data files..."
 	@rm data/features/*.pkl || true
 
-clear_processed_data:
+clear_processed_data:  ## Clears out processed data files
 	@echo "[INFO] Clearing processed data files..."
 	@rm data/processed/*.pkl || true
 
-clear_raw_data:
+clear_raw_data:  ## Clears out raw data files
 	@echo "[INFO] Clearing raw data files..."
 	@rm data/raw/*.pkl || true
 	@rm data/raw/*.txt || true
@@ -79,14 +90,13 @@ clear_raw_data:
 	@rm data/raw/*.zip || true
 
 # - Media Related
-.phony: clear_media generate_media
 
-clear_media:
+clear_media:  ## Clears out media files for this project
 	@echo "[INFO] Clearing existing media..."
 	@rm media/*.* || true
 	@rm logs/generate_media/*.* || true
 
-generate_media: clear_media
+generate_media: clear_media  ## Generates media files for this project
 	@echo "[INFO] Generating media from notebook files..."
 	@$(PYTHON) src/generate_media.py notebook notebooks/2_wunderground_processed_data_research.ipynb
 	@$(PYTHON) src/generate_media.py notebook notebooks/4_nasa_processed_data_research.ipynb
