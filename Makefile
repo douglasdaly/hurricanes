@@ -101,6 +101,7 @@ generate_media: clear_media  ## Generates media files for this project
 	@$(PYTHON) src/generate_media.py notebook notebooks/2_wunderground_processed_data_research.ipynb
 	@$(PYTHON) src/generate_media.py notebook notebooks/4_nasa_processed_data_research.ipynb
 	@$(PYTHON) src/generate_media.py notebook notebooks/6_noaa_interpolated_feature_data_explore.ipynb
+	@$(PYTHON) src/generate_media.py notebook notebooks/7_mcmc_model.ipynb
 	@echo "[INFO] Generating animated global heatmaps..."
 	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_surface_interpolated_data.pkl --output media/interp_animated_surface.mp4 --title "Surface Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
 	@$(PYTHON) src/generate_media.py heatmap --figsize-width 6 --figsize-height 3.5 --dpi 72 globe data/features/noaa_aloft_interpolated_data.pkl --output media/interp_animated_aloft.mp4 --title "Aloft Temperature Anomaly" --animate --compress --use-optimage --percentile 15 --fps 4 --smooth 12 --end-index 2018
