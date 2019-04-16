@@ -2,6 +2,8 @@
 
 *An analysis of historical tropical cyclone data from Weather Underground and global climate data from NASA and NOAA.*
 
+See the associated [blog post](https://www.douglasdaly.com/blog/view/hurricanes.html) for more.
+
 -----
 
 ## Prerequisites
