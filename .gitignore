@@ -17,3 +17,6 @@ __pycache__/
 
 # PyCharm
 .idea/
+
+# VSCode
+.vscode/

@@ -76,25 +76,25 @@ clear_data: clear_raw_data clear_processed_data clear_features_data  ## Clears o
 
 clear_features_data:  ## Clears out features data files
 	@echo "[INFO] Clearing features data files..."
-	@rm data/features/*.pkl || true
+	@rm -f data/features/*.pkl || true
 
 clear_processed_data:  ## Clears out processed data files
 	@echo "[INFO] Clearing processed data files..."
-	@rm data/processed/*.pkl || true
+	@rm -f data/processed/*.pkl || true
 
 clear_raw_data:  ## Clears out raw data files
 	@echo "[INFO] Clearing raw data files..."
-	@rm data/raw/*.pkl || true
-	@rm data/raw/*.txt || true
-	@rm data/raw/*.csv || true
-	@rm data/raw/*.zip || true
+	@rm -f data/raw/*.pkl || true
+	@rm -f data/raw/*.txt || true
+	@rm -f data/raw/*.csv || true
+	@rm -f data/raw/*.zip || true
 
 # - Media Related
 
 clear_media:  ## Clears out media files for this project
 	@echo "[INFO] Clearing existing media..."
-	@rm media/*.* || true
-	@rm logs/generate_media/*.* || true
+	@rm -f media/*.* || true
+	@rm -f logs/generate_media/*.* || true
 
 generate_media: clear_media  ## Generates media files for this project
 	@echo "[INFO] Generating media from notebook files..."

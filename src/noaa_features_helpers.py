@@ -15,15 +15,16 @@ import os
 import pickle
 import calendar
 from datetime import datetime, timedelta
-import warnings
 import multiprocessing
 import psutil
+import warnings
 
 import numpy as np
 import pandas as pd
 from scipy import interpolate as interp
-
 from tqdm import tqdm
+
+from idw import tree as idw_tree
 
 
 #
@@ -158,11 +159,9 @@ def __map_wrap_do_interpolation_single_point(args):
 
 def __do_interpolation_single_point(points, values, method):
     """Interpolates a single set of points"""
-    gx, gy = np.mgrid[-360:360, -180:180]
-
-    rbfi = interp.Rbf(points[:, 0], points[:, 1], values, function=method)
-    t_result = rbfi(gx, gy)
-
+    g = np.mgrid[-360:360, -180:180].reshape((2, -1)).T
+    idwi = idw_tree(points, values)
+    t_result = idwi(g).T.reshape((720, 360))
     return t_result[180:(180+360), 90:(90+180)]
 
 
